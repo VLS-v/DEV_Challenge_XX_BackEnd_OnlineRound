@@ -5,7 +5,7 @@ type Cell struct {
 	Result string
 }
 
-type Sheet map[string]Cell
+type Sheet map[string]*Cell
 
 type SavesData map[string]Sheet
 
@@ -15,3 +15,7 @@ type CellResponse struct {
 }
 
 type SheetResponse map[string]CellResponse
+
+type SetCell struct {
+	Value string `json:"value"`
+}

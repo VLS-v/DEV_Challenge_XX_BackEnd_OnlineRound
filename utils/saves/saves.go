@@ -8,11 +8,9 @@ import (
 )
 
 type SavesInterface interface {
-	//Create() error
-	OpenSaves(filename string) error
-	Read() error
+	Open(filename string) error
+	Load() error
 	Write() error
-	//Close() error
 }
 
 type Saves struct {
@@ -24,40 +22,54 @@ type File struct {
 	OsFile *os.File
 }
 
-func (sv *Saves) OpenSaves(filename string) (*os.File, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
+func (sv *Saves) Open(filename string) error {
+	//file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		if os.IsNotExist(err) {
 			file, err = os.Create(filename)
 			if err != nil {
-				return nil, fmt.Errorf("could not create file: %v", err)
+				return fmt.Errorf("could not create file: %v", err)
 			}
 			fmt.Printf("File '%s' created.\n", filename)
-			return file, nil
+			sv.SavesFile = file
+			return nil
 		}
-		return nil, fmt.Errorf("could not open file: %v", err)
+		return fmt.Errorf("could not open file: %v", err)
 	}
 	fmt.Printf("File '%s' opened.\n", filename)
-	return file, nil
+	sv.SavesFile = file
+	return nil
 }
 
-func (sv *Saves) LoadSaves(savesFile *os.File) (models.SavesData, error) {
-	var savesData models.SavesData = make(models.SavesData)
-	fileInfo, err := savesFile.Stat()
+func (sv *Saves) Load() error {
+	//var savesData models.SavesData = make(models.SavesData)
+	fileInfo, err := sv.SavesFile.Stat()
 
 	if err != nil {
 		fmt.Println("Error retrieving file information.", err)
-		return nil, err
+		return err
 	}
 
 	if fileInfo.Size() == 0 {
-		return savesData, nil
+		return nil
 	}
 
-	if err := json.NewDecoder(savesFile).Decode(&savesData); err != nil {
-		fmt.Println("Error decoding JSON:0", err)
-		return nil, err
+	if err := json.NewDecoder(sv.SavesFile).Decode(&sv.SavesData); err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return err
 	}
+	return nil
+}
 
-	return savesData, nil
+func (sv *Saves) Write() error {
+	jsonData, err := json.Marshal(sv.SavesData)
+	if err != nil {
+		return err
+	}
+	_, err = sv.SavesFile.Write(jsonData)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -3,10 +3,10 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	exprEval "spreadsheets/helpers/expressionevaluator"
 	"spreadsheets/models"
+	"spreadsheets/utils/saves"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -22,14 +22,12 @@ import (
 */
 
 type Controller struct {
-	file  *os.File
-	saves models.SavesData
+	Saves saves.Saves
 }
 
-func New(file *os.File, saves models.SavesData) *Controller {
+func New(saves saves.Saves) *Controller {
 	return &Controller{
-		file:  file,
-		saves: saves,
+		Saves: saves,
 	}
 }
 
@@ -61,17 +59,28 @@ func (c *Controller) SetCellValue(ctx echo.Context) error {
 // GET: "/api/v1/:sheet_id/"
 func (c *Controller) GetSheet(ctx echo.Context) error {
 	sheetId := ctx.Param("sheet_id")
-	_, keyExists := c.saves[sheetId]
-	if keyExists {
-		return ctx.JSON(http.StatusOK, c.saves)
+	//_, sheetExists := c.saves[sheetId]
+	_, sheetExists := c.Saves.SavesData[sheetId]
+	if sheetExists {
+		return ctx.JSON(http.StatusOK, c.Saves.SavesData)
 	}
 	return ctx.String(http.StatusNotFound, fmt.Sprintf("Sheet %s is missing", sheetId))
 }
 
 // GET: "/api/v1/:sheet_id/:cell_id"
 func (c *Controller) GetCell(ctx echo.Context) error {
-	//sheetId := ctx.Param("sheet_id")
+	sheetId := ctx.Param("sheet_id")
 	cellId := ctx.Param("cell_id")
+
+	_, sheetExists := c.Saves.SavesData[sheetId]
+	if !sheetExists {
+		return ctx.String(http.StatusNotFound, fmt.Sprintf("Sheet %s is missing", sheetId))
+	}
+
+	_, cellExists := c.Saves.SavesData[sheetId][cellId]
+	if cellExists {
+		return ctx.String(http.StatusNotFound, fmt.Sprintf("Cell %s is missing", cellId))
+	}
 
 	/*
 		POST /api/v1/devchallenge-xx/var1 with {“value:”: “1”}
@@ -101,22 +110,29 @@ func (c *Controller) GetCell(ctx echo.Context) error {
 		fmt.Println(saves["sheet1"][variable])
 		ctx.String(http.StatusOK, variable+"\n")
 	} */
-
-	t := models.Sheet{
+	s := models.Sheet{
 		"var1": {Value: "1", Result: "1"},
 		"var2": {Value: "2", Result: "2"},
-		"var3": {Value: "=var1+var2"},
-		"var4": {Value: "=var1+var2"},
-		"var5": {Value: "value5"},
 	}
 
-	result, err := exprEval.EvaluateExpression(expression, t)
+	t := models.SetCell{
+		Value: "1",
+	}
+
+	result, err := exprEval.EvaluateExpression(t.Value, s)
 	if err != nil {
 		fmt.Println("Помилка обчислення виразу:", err)
 		return ctx.String(http.StatusOK, err.Error())
 	}
+	s[cellId] = &models.Cell{Value: t.Value, Result: result}
 
 	fmt.Println("Результат обчислення: ", result)
+	err = c.Saves.Write()
+	fmt.Printf("Ooops. Failed to save the value, try again. Input value: %v: %v", cellId, s[cellId])
+	if err != nil {
+		delete(s, cellId)
+		return ctx.String(http.StatusOK, fmt.Sprintf("Ooops. Failed to save the value, try again. Input value: %"))
+	}
 
 	response := &models.Cell{
 		Value: cellId,

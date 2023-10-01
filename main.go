@@ -21,22 +21,18 @@ func main() {
 
 	saves := saves.Saves{}
 
-	savesFile, err := saves.OpenSaves(SPREADSHEETS_FILE_NAME)
+	err := saves.Open(SPREADSHEETS_FILE_NAME)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-	/* key := "2-fg"
-	var m map[string]interface{}
-	m = make(map[string]interface{})
-	m[key] = 2
-	fmt.Println("m", m) */
+	defer saves.SavesFile.Close()
 
-	savesData, err := saves.LoadSaves(savesFile)
+	err = saves.Load()
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
 
-	c := controllers.New(savesFile, savesData)
+	c := controllers.New(saves)
 	//e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.POST("/api/v1/:sheet_id/:cell_id", c.SetCellValue)
