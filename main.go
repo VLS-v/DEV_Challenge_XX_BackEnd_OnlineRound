@@ -18,7 +18,6 @@ const SPREADSHEETS_FILE_NAME = "saves.txt"
 
 func main() {
 	e := echo.New()
-
 	saves := saves.Saves{}
 
 	err := saves.Open(SPREADSHEETS_FILE_NAME)

@@ -15,7 +15,7 @@ type SavesInterface interface {
 
 type Saves struct {
 	SavesFile *os.File
-	SavesData models.SavesData
+	SavesData map[string]models.Sheet
 }
 
 type File struct {
@@ -23,8 +23,7 @@ type File struct {
 }
 
 func (sv *Saves) Open(filename string) error {
-	//file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		if os.IsNotExist(err) {
 			file, err = os.Create(filename)
@@ -67,7 +66,10 @@ func (sv *Saves) Write() error {
 	if err != nil {
 		return err
 	}
+	sv.SavesFile.Truncate(0)
+	sv.SavesFile.Seek(0, 0)
 	_, err = sv.SavesFile.Write(jsonData)
+
 	if err != nil {
 		return err
 	}

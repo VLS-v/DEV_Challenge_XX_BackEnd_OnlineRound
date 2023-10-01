@@ -7,7 +7,6 @@ type Cell struct {
 
 type Sheet map[string]*Cell
 
-type SavesData map[string]Sheet
 
 type CellResponse struct {
 	Value  string `json:"value"`
