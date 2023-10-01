@@ -61,16 +61,11 @@ func (c *Controller) SetCellValue(ctx echo.Context) error {
 // GET: "/api/v1/:sheet_id/"
 func (c *Controller) GetSheet(ctx echo.Context) error {
 	sheetId := ctx.Param("sheet_id")
-
-	/* response := &models.Cell{
-		Value: cellId,
-		Result: sheetId,
-	} */
-	response := fmt.Sprintf("Variable string %s content", sheetId)
-	ctx.String(http.StatusOK, response)
-	//return ctx.JSON(http.StatusOK, response)
-
-	return nil
+	_, keyExists := c.saves[sheetId]
+	if keyExists {
+		return ctx.JSON(http.StatusOK, c.saves)
+	}
+	return ctx.String(http.StatusNotFound, fmt.Sprintf("Sheet %s is missing", sheetId))
 }
 
 // GET: "/api/v1/:sheet_id/:cell_id"
@@ -89,12 +84,6 @@ func (c *Controller) GetCell(ctx echo.Context) error {
 	/* var1 := "1"
 	var2 := "2"
 	var3 := "=var1+var2" */
-
-	//var1Cell := models.Cell{Value: "2", Result: "2"}
-	/* var1Cell := models.Cell{Value: "2"}
-	sheet1 := models.Sheet{"var1": var1Cell}
-	saves := models.SavesData{"sheet1": sheet1} */
-
 	expression := "=_ts2_2t+var2(3*var1)+2/var1+var4"
 	expression = "2-var2+3*3+var3+var4"
 
@@ -113,33 +102,19 @@ func (c *Controller) GetCell(ctx echo.Context) error {
 		ctx.String(http.StatusOK, variable+"\n")
 	} */
 
-	/* t := map[string]string{
-		"var1": "1",
-		"var2": "2",
-		"var3": "=var1+var2",
-		"var4": "=var3+var1",
-	} */
-
 	t := models.Sheet{
-		"var1": {Value: "1"},
-		"var2": {Value: "2"},
+		"var1": {Value: "1", Result: "1"},
+		"var2": {Value: "2", Result: "2"},
 		"var3": {Value: "=var1+var2"},
 		"var4": {Value: "=var1+var2"},
 		"var5": {Value: "value5"},
 	}
-
-	/* formedExpression, err := replaceVariablesInExpression(expression, variables, t)
-	if err != nil {
-		fmt.Println("Помилка заміни змінних значеннями:", err)
-		return ctx.String(http.StatusOK, err.Error())
-	} */
 
 	result, err := exprEval.EvaluateExpression(expression, t)
 	if err != nil {
 		fmt.Println("Помилка обчислення виразу:", err)
 		return ctx.String(http.StatusOK, err.Error())
 	}
-	//formedExpression, err := replaceVariablesInExpression(expression, variables)
 
 	fmt.Println("Результат обчислення: ", result)
 

@@ -1,8 +1,8 @@
 package models
 
 type Cell struct {
-	Value string
-	//Result string `json:"result"`
+	Value  string
+	Result string
 }
 
 type Sheet map[string]Cell
