@@ -14,24 +14,22 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-const SPREADSHEETS_FILE_NAME = "saves.txt"
-
 func main() {
 	e := echo.New()
-	saves := saves.Saves{}
+	savesInstance := saves.Saves{}
 
-	err := saves.Open(SPREADSHEETS_FILE_NAME)
+	err := savesInstance.Open("./saves/")
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-	defer saves.SavesFile.Close()
+	defer savesInstance.SavesFile.Close()
 
-	err = saves.Load()
+	err = savesInstance.Load()
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
 
-	c := controllers.New(saves)
+	c := controllers.New(&savesInstance)
 	//e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.POST("/api/v1/:sheet_id/:cell_id", c.SetCellValue)
