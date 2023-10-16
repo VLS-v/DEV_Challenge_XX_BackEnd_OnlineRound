@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  spreadsheets:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/bin/saves/
+  spreadsheets-test:
+    build:
+      context: .
+      dockerfile: ./test.Dockerfile
